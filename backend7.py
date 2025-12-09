@@ -329,14 +329,14 @@ def chat_with_agent():
 
     strategy = game_state['am_strategy'] if agent == 'AM' else game_state['mc_strategy']
 
-    # --- FIX: ensure last_inv never becomes undefined ---
+    # --- Ensure last_inv exists ---
     if not game_state['history']:
         last_inv = 12
     else:
         last = game_state['history'][-1]
         last_inv = last['am_investment'] if agent == 'AM' else last['mc_investment']
 
-    # --- OPENAI API CALL ---
+    # --- OpenAI API CALL ---
     if os.environ.get("OPENAI_API_KEY"):
         try:
             system_prompt = f"""
@@ -356,10 +356,14 @@ def chat_with_agent():
                 max_tokens=60
             )
 
-            return jsonify({"response": response.choices[0].message.content})
+            # ✅ Fix: New SDK returns object, must use message['content']
+            ai_reply = response.choices[0].message['content']
+            print("AI Reply:", ai_reply)
+
+            return jsonify({"response": ai_reply})
 
         except Exception as e:
-            print("OpenAI Error:", e)
+            print("🔥 OpenAI Error:", type(e), e)
 
     # --- FALLBACK RESPONSES ---
     if strategy == "competitive":
@@ -372,6 +376,7 @@ def chat_with_agent():
         reply = f"{last_inv} felt like the most balanced action."
 
     return jsonify({"response": reply})
+
     
 if __name__ == '__main__':
     print("\n" + "="*50)
