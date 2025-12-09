@@ -1,6 +1,14 @@
+#!/usr/bin/env python3
+from flask import Flask, request, jsonify
 from flask_cors import CORS
+import os
+app = Flask(__name__)
 CORS(app)
 
+@app.route("/")
+def home():
+    return "Backend7 is running!", 200
+    
 #!/usr/bin/env python3
 """
 Backend 7.0 - The Final "Production" Version
@@ -10,11 +18,10 @@ Combines:
 3. Persona-Driven Logic (Cooperative/Competitive/etc)
 4. Structured Reasoning for Frontend UI
 """
-from flask import Flask, request, jsonify
+
 from flask_cors import CORS
 import json
 import openai
-import os
 import random
 import math
 from datetime import datetime
@@ -23,7 +30,6 @@ from datetime import datetime
 # Configuration
 # ============================================================================
 
-app = Flask(__name__)
 app.config['SECRET_KEY'] = 'insead-game-simulation-final'
 CORS(app, resources={r"/*": {"origins": "*"}})
 
@@ -351,9 +357,12 @@ def chat_with_agent():
     Persona-aware chat endpoint.
     Falls back to robust templates if OpenAI is not configured.
     """
-    data = request.json
-    agent = data.get('agent', 'am').upper() # AM or MC
-    user_msg = data.get('message', '')
+    data = request.json or {}
+    agent = data.get("agent", "").upper() # AM or MC
+    user_msg = data.get("message", "")
+    reply = f"[{agent.upper()}] Received: {user_msg}"
+
+    return jsonify({"reply": reply}), 200
     
     strategy = game_state['am_strategy'] if agent == 'AM' else game_state['mc_strategy']
     last_inv = 0
