@@ -10,7 +10,9 @@ import json
 import random
 import math
 from datetime import datetime
-import openai
+from openai import OpenAI
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
+
 
 # --------------------------
 # Create Flask app (ONLY ONCE)
@@ -30,7 +32,7 @@ app.config['SECRET_KEY'] = 'insead-game-simulation-final'
 # --------------------------
 # OpenAI Key
 # --------------------------
-openai.api_key = os.environ.get("OPENAI_API_KEY", "")
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
 
 # Health check / root route
 @app.route("/")
@@ -350,15 +352,16 @@ def chat_with_agent():
             Answer briefly (1 sentence) in character. 
             If you are competitive, be selfish/business-like. If cooperative, be friendly/trusting."""
             
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_msg}
-                ],
-                max_tokens=60
+            ],
+            max_tokens=60
             )
-            return jsonify({'response': response.choices[0].message.content})
+            return jsonify({'response': response.choices[0].message["content"]})
+
         except Exception as e:
             print(f"OpenAI Error: {e}")
             # Fall through to template if API fails
