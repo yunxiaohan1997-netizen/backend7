@@ -32,6 +32,11 @@ app.config['SECRET_KEY'] = 'insead-game-simulation-final'
 # --------------------------
 openai.api_key = os.environ.get("OPENAI_API_KEY", "")
 
+# Health check / root route
+@app.route("/")
+def home():
+    return "Backend 7.0 Running", 200
+
 # ============================================================================
 # [cite_start]REAL PAYOFF DATA (From 11.29.xlsx) [cite: 1]
 # ============================================================================
