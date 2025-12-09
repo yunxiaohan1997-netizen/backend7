@@ -356,7 +356,7 @@ def chat_with_agent():
                 max_tokens=60
             )
 
-            return jsonify({"response": response.choices[0].message["content"]})
+            return jsonify({"response": response.choices[0].message.content})
 
         except Exception as e:
             print("OpenAI Error:", e)
