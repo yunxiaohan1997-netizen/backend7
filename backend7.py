@@ -742,7 +742,7 @@ for d in [base_decision - 2, base_decision + 2]:
 # sort by future value
 best = max(candidates, key=lambda x: x[1])[0]
 
-return best
+
 steps.append({
     "type": "calculation",
     "text": f"I estimated future value for {investment} as {fv_invest:.1f}, which guided my long-term decision."
