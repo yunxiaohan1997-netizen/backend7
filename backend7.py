@@ -329,14 +329,14 @@ def chat_with_agent():
 
     strategy = game_state['am_strategy'] if agent == 'AM' else game_state['mc_strategy']
 
-    # --- Ensure last_inv exists ---
+    # Last move
     if not game_state['history']:
         last_inv = 12
     else:
         last = game_state['history'][-1]
         last_inv = last['am_investment'] if agent == 'AM' else last['mc_investment']
 
-    # --- OpenAI API CALL ---
+    # OpenAI call
     if os.environ.get("OPENAI_API_KEY"):
         try:
             system_prompt = f"""
@@ -356,24 +356,24 @@ def chat_with_agent():
                 max_tokens=60
             )
 
-            # ✅ Fix: New SDK returns object, must use message['content']
-            ai_reply = response.choices[0].message['content']
-            print("AI Reply:", ai_reply)
+            # ⭐⭐⭐ THIS IS THE CORRECT WAY ⭐⭐⭐
+            ai_reply = response.choices[0].message.content
 
+            print("AI Reply:", ai_reply)
             return jsonify({"response": ai_reply})
 
         except Exception as e:
-            print("🔥 OpenAI Error:", type(e), e)
+            print("🔥 OpenAI Error:", type(e), str(e))
 
-    # --- FALLBACK RESPONSES ---
+    # fallback
     if strategy == "competitive":
-        reply = f"I invested {last_inv} because I focus on ROI — show stronger commitment."
+        reply = f"I invested {last_inv} because I aim to maximize ROI — show stronger commitment."
     elif strategy == "cooperative":
         reply = f"I invested {last_inv} because I believe in this partnership."
     elif strategy == "adaptive":
         reply = f"I matched {last_inv} since reciprocity ensures fairness."
     else:
-        reply = f"{last_inv} felt like the most balanced action."
+        reply = f"{last_inv} felt like the most balanced choice."
 
     return jsonify({"response": reply})
 
