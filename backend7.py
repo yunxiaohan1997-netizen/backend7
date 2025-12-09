@@ -22,17 +22,13 @@ app = Flask(__name__)
 # --------------------------
 # Apply CORS (ONLY ONCE)
 # --------------------------
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": ["*"]}})
 
 # --------------------------
 # App config
 # --------------------------
 app.config['SECRET_KEY'] = 'insead-game-simulation-final'
 
-# --------------------------
-# OpenAI Key
-# --------------------------
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
 
 # Health check / root route
 @app.route("/")
@@ -327,56 +323,55 @@ def continue_simulation():
 
 @app.route('/chat_with_agent', methods=['POST'])
 def chat_with_agent():
-    """
-    Persona-aware chat endpoint.
-    Falls back to robust templates if OpenAI is not configured.
-    """
     data = request.json or {}
-    agent = data.get("agent", "").upper() # AM or MC
+    agent = data.get("agent", "").upper()
     user_msg = data.get("message", "")
-    reply = f"[{agent.upper()}] Received: {user_msg}"
-    
+
     strategy = game_state['am_strategy'] if agent == 'AM' else game_state['mc_strategy']
-    last_inv = 0
-    if game_state['history']:
+
+    # --- FIX: ensure last_inv never becomes undefined ---
+    if not game_state['history']:
+        last_inv = 12
+    else:
         last = game_state['history'][-1]
         last_inv = last['am_investment'] if agent == 'AM' else last['mc_investment']
-        
-    # Attempt OpenAI Generation (if key exists)
-    if openai.api_key:
+
+    # --- OPENAI API CALL ---
+    if os.environ.get("OPENAI_API_KEY"):
         try:
-            system_prompt = f"""You are Agent {agent} in a repeated game simulation. 
-            Your strategy is {strategy}. 
+            system_prompt = f"""
+            You are Agent {agent} in a repeated game.
+            Your strategy is {strategy}.
             Last round you invested {last_inv} engineers.
-            The user is asking: "{user_msg}"
-            Answer briefly (1 sentence) in character. 
-            If you are competitive, be selfish/business-like. If cooperative, be friendly/trusting."""
-            
+            The user says: '{user_msg}'
+            Reply in ONE short sentence, staying in character.
+            """
+
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_msg}
-            ],
-            max_tokens=60
+                ],
+                max_tokens=60
             )
-            return jsonify({'response': response.choices[0].message["content"]})
+
+            return jsonify({"response": response.choices[0].message["content"]})
 
         except Exception as e:
-            print(f"OpenAI Error: {e}")
-            # Fall through to template if API fails
-            
-    # Robust Fallback Template (Persona-aware)
-    if strategy == 'competitive':
-        reply = f"I chose {last_inv} because I prioritize my own ROI. I need to see more commitment from you first."
-    elif strategy == 'cooperative':
-        reply = f"I invested {last_inv} because I believe in our partnership. Let's create value together!"
-    elif strategy == 'adaptive':
-        reply = f"My move of {last_inv} was a direct response to the previous round. I treat you exactly as you treat me."
+            print("OpenAI Error:", e)
+
+    # --- FALLBACK RESPONSES ---
+    if strategy == "competitive":
+        reply = f"I invested {last_inv} because I focus on ROI — show stronger commitment."
+    elif strategy == "cooperative":
+        reply = f"I invested {last_inv} because I believe in this partnership."
+    elif strategy == "adaptive":
+        reply = f"I matched {last_inv} since reciprocity ensures fairness."
     else:
-        reply = f"I think {last_inv} was a balanced decision given the current market conditions."
-        
-    return jsonify({'response': reply})
+        reply = f"{last_inv} felt like the most balanced action."
+
+    return jsonify({"response": reply})
     
 if __name__ == '__main__':
     print("\n" + "="*50)
